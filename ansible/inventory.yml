@@ -1,0 +1,21 @@
+all: #сделать так чтобы CI брал ip из tf-output и вставлял сюда
+  children:
+    databases-prod-test:
+      hosts:
+        pg-primary:
+          ipv4_address: changeme
+          primary_user: ansible-user
+          db_name: clouder_db
+          seed_hosts: es02,es03
+          INSTANCE: "01"
+        pg-standby:
+          ipv4_address: changeme
+          primary_user: ansible-user
+          db_name: clouder_db
+          seed_hosts: es01,es03
+          INSTANCE: "02"
+  vars:
+     ansible_connection: local
+
+#-------need-------
+# set ips

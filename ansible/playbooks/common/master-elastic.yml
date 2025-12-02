@@ -1,0 +1,33 @@
+- name: Create a directory if it does not exist
+  ansible.builtin.file:
+    path: /tmp/elastic/
+    state: directory
+    mode: '0755'
+- name: "elastic.01 - copy image elastic"
+  ansible.builtin.copy:
+    src: ~/Innowise_DevopsTrainee/Techcore_project/infrastructure/elastic/elasticsearch:8.5.3.tar
+    dest: /tmp/elastic/elasticsearch:8.5.3.tar
+    mode: "644"
+- name: "elastic.02 - copy master certs"
+  ansible.builtin.copy:
+    src: ~/Innowise_DevopsTrainee/Techcore_project/infrastructure/elastic/certs
+    dest: /tmp/elastic/
+    mode: "0750"
+    owner: redmi
+- name: "elastic.03 - copy master script"
+  ansible.builtin.copy:
+    src: ~/Innowise_DevopsTrainee/Techcore_project/infrastructure/elastic/master.sh
+    dest: /tmp/elastic/
+    mode: "750"
+- name: "elastic.04 - starting master container"
+  shell: 
+    cmd: "/tmp/elastic/master.sh"
+    chdir: /tmp/elastic/
+  environment:
+    ELASTIC_PASSWORD: "{{ ELASTIC_PASSWORD }}"
+    INSTANCE: "{{ INSTANCE }}"
+    seed_hosts: "{{ seed_hosts }}"
+    node_role: "{{ node_role }}"
+    ENROLLMENT_TOKEN: "{{ ENROLLMENT_TOKEN }}"
+    CLUSTER_NAME: "my-prod-cluster"
+

@@ -1,0 +1,8 @@
+FROM  python:3.9-slim
+
+WORKDIR /usr/share/main_code
+COPY ./code ./
+
+RUN python3 -m venv venv && pip3 install -r ./requirements.txt
+
+CMD [ "python3", "main.py" ]

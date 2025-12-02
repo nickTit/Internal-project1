@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:15-alpine
+    # env_file:
+    #   - ./code/.env
+    environment:
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=postgres
+    volumes:
+      - postgres_volume/:/var/lib/postgresql/data
+    networks:
+      - test
+    restart: always
+    ports:  
+      - 5432:5432
+    healthcheck:
+      test: ["CMD","pg_isready"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  python: 
+    image: final_python:v01
+    # env_file:
+    #  - ./code/.env
+    networks:
+      - test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PG_PASS=${PG_PASS}
+      - PG_URL=${PG_URL}
+      - DB_NAME=${DB_NAME}
+    ports:
+      - 8000:8000
+networks:
+  test:
+    driver: bridge
+
+volumes:
+  postgres_volume:
+   

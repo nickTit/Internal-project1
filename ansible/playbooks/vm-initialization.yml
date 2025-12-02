@@ -1,0 +1,12 @@
+- name: "db-preparing"
+  hosts: all
+  gather_facts: true
+  become: true
+  handlers: []
+  collections:
+  - community.docker
+  roles: []
+
+  tasks:
+  - name: "task.01 - install python + db"
+    ansible.builtin.include_tasks: common/set-up.yml

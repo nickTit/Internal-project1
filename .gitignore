@@ -1,0 +1,7 @@
+infra/*.tfvars
+.env
+ansible/**/secrets*.yml
+**/doc.txt
+venv/
+**/.terraform/
+**/.terraform*
