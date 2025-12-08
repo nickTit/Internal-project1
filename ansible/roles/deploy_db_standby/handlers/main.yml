@@ -1,0 +1,9 @@
+#SPDX-License-Identifier: MIT-0
+---
+# handlers file for deploy_db_standby
+
+- name: Restart postgresql
+  ansible.builtin.systemd_service:
+    name: postgresql
+    state: restarted
+  become: true

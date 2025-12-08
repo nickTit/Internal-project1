@@ -1,0 +1,88 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for deploy_db_standby
+
+- name: "postgresql.01 - install db"
+  ansible.builtin.apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  become: true
+  vars:
+    packages:
+    - postgresql
+    - python3-psycopg2
+
+
+
+- name: "postgresql.02 - fulfill .pgpass file"
+  ansible.builtin.copy:
+    content: | #making backup by postgresql user
+      pg-primary:5432:*:replication_user:{{db_password}}
+    dest: /var/lib/postgresql/.pgpass   
+    group: postgres
+    owner: postgres
+    force: false 
+    mode: 0600
+
+
+- name: postgre.03 - Making sure db is stopped
+  ansible.builtin.systemd_service:
+    state: stopped
+    name: postgresql
+
+- name: postgre.04 - making pg_basebackup 
+  ansible.builtin.command: "pg_basebackup -h pg-primary -D /var/lib/postgresql/16/main/data1 -w -U replication_user -v -P --wal-method=stream -R " #R добавил сам
+  become_user: postgres
+
+- name: "postgresql.05 - update - hot_standby "
+  ansible.builtin.lineinfile:
+    path: /etc/postgresql/16/main/postgresql.conf #нужно будет менять   15   при другой версии postgre   
+    state: present
+    regexp: "{{item.regexp}}"
+    line: "{{item.line}}"
+  loop: "{{items}}"
+  vars:  
+      items:
+      - {regexp: 'hot_standby', line: "hot_standby = on" }  
+  notify:
+    - Restart postgresql  
+
+- name: postgre.06 - Make sure db is running
+  ansible.builtin.systemd_service:
+    state: started
+    name: postgresql
+
+- name: "postgresql.07 - create db"
+  community.postgresql.postgresql_db:
+    name: "{{db_name}}"
+    comment: My test DB for BACKUPS
+    owner: postgres
+    state: present
+  become_user: postgres
+
+- name: "postgresql.08 - creating subscription "
+  community.postgresql.postgresql_subscription:
+    login_db: "{{db_name}}" #тут будут храниться бэкапы?
+    name: subscription1
+    state: present
+    publications: "publication1"
+    owner: postgres #? 
+    connparams:
+      host: pg-primary #как-то
+      port: 5432
+      user: replication_user
+      password: "{{ db_password }}"
+      dbname: "{{db_name}}"
+  become_user: postgres
+
+
+
+#- name: postgre.08 - Select query to db <db_name> with positional arguments and non-default credentials
+#  community.postgresql.postgresql_query:
+#    login_db: "{{db_name}}"
+#    login_user: postgres
+#    login_password: "{{db_password}}"
+#    query: SELECT * FROM "";
+#  
+    

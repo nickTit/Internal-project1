@@ -43,7 +43,7 @@ resource "google_compute_router_nat" "nat" {
       source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
     }
   }
-
+  endpoint_types = ["ENDPOINT_TYPE_VM"]
   min_ports_per_vm = 64
 }
 
@@ -75,6 +75,9 @@ resource "google_compute_instance" "vm_for_databases" {
 
   network_interface {
     subnetwork = google_compute_subnetwork.private_subnetworks["subnet-vms-db"].self_link
+    # access_config {
+    #   nat_ip = "10.202.32.53"
+    # }
   }
 
   tags = ["database"]
@@ -97,12 +100,10 @@ resource "google_compute_instance" "vm_for_databases" {
     ssh-keys = "ansible-user:${file("~/.ssh/final_task.pub")}" #тока юзера указывать -  ansible-user
   }
 
-
-
 }
 
 resource "google_compute_firewall" "firewall-database" {
-  name    = "firewall-database"
+  name    = "firewall-database-ingress"
   network = google_compute_network.main_vpc_network.name
 
   source_tags = ["database"]
@@ -113,6 +114,19 @@ resource "google_compute_firewall" "firewall-database" {
     ports    = ["5432"]
   }
 }
+# resource "google_compute_firewall" "firewall-database-2" {
+#   name    = "firewall-database-egress"
+#   network = google_compute_network.main_vpc_network.name
+#   #source_tags = ["database"]
+#   target_tags = ["database"]
+
+#   direction = "EGRESS"
+#   allow {
+#     protocol = "tcp"
+#     ports    = ["5432"]
+#   }
+# }
+
 resource "google_compute_firewall" "firewall-runner" {
   name    = "firewall-runner"
   network = google_compute_network.main_vpc_network.name
@@ -143,6 +157,28 @@ resource "google_compute_firewall" "firewall-kuber-database" {
   }
 }
 
+resource "google_compute_firewall" "allow-ingress-from-iap" {
+  name    = "allow-ingress-from-iap"
+  network = google_compute_network.main_vpc_network.name
+
+  source_ranges = ["35.235.240.0/20"]
+  
+  allow {
+    protocol = "tcp"
+  }
+}
 
 
 
+
+resource "google_project_iam_member" "access-iap" {
+  project = var.project_id
+  role = "roles/iap.tunnelResourceAccessor"
+  member = "serviceAccount:${google_service_account.sa.email}"
+}
+
+
+resource "google_service_account" "sa" {
+  account_id   = "iap-account"
+  display_name = "A service account for iap"
+}

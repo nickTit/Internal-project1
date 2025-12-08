@@ -3,19 +3,21 @@ all: #сделать так чтобы CI брал ip из tf-output и вста
     databases-prod-test:
       hosts:
         pg-primary:
-          ipv4_address: changeme
-          primary_user: ansible-user
+          #ansible_host: "10.4.0.3"
+          primary_user: replication_user
           db_name: clouder_db
-          seed_hosts: es02,es03
           INSTANCE: "01"
         pg-standby:
-          ipv4_address: changeme
+          #ansible_host: "10.4.0.2"
           primary_user: ansible-user
           db_name: clouder_db
-          seed_hosts: es01,es03
           INSTANCE: "02"
-  vars:
-     ansible_connection: local
+          host: "10.4.0.2"
+vars:
+  ansible_user: ansible-user
+  db_password: "some-supersecret"
+  
 
 #-------need-------
 # set ips
+#нету внешних ip адресов
