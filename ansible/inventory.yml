@@ -15,7 +15,8 @@ all: #сделать так чтобы CI брал ip из tf-output и вста
           host: "10.4.0.2"
 vars:
   ansible_user: ansible-user
-  db_password: "some-supersecret"
+  db_password: "$pg_pass"
+  postgres_password: "$postgres_password"
   
 
 #-------need-------

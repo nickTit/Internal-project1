@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-service-python
+  namespace: final-task-inno
+  labels:
+    {{- include "test-chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "test-chart.selectorLabels" . | nindent 4 }}
+  ports:
+  - port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.targetPort }}

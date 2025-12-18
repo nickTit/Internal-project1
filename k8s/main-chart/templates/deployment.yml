@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: main-deployment-python-app
+  namespace: final-task-inno
+  labels: {{- include "test-chart.labels" . | nindent 4}}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  minReadySeconds: 15
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 2
+    type: RollingUpdate
+    
+  selector:
+    matchLabels:
+      {{- include "test-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "test-chart.selectorLabels" . | nindent 8 }}
+
+    spec:
+      containers:
+      - name: python-container
+        image: "{{ .Values.image.repository }}/{{ .Values.image.tag | default .Values.image.defaultImage }}"
+        
+        #image: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:v02 
+        #how to set version via variables?
+        
+        
+        ports:
+        - containerPort: 8000
+         
+        {{- with .Values.env }}
+        env:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        #- name: PG_PASS
+        #  valueFrom:
+        #    secretKeyRef:
+        #      name: secret-for-python
+        #      key: pg_pass
+        #- name: DB_NAME
+        #  valueFrom:
+        #    secretKeyRef:
+        #      name: secret-for-python
+        #      key: pg_db
+        #- name: PG_URL
+        #  valueFrom: 
+        #    secretKeyRef:
+        #      name: secret-for-python
+        #      key: pg_url
+        #- name: POSTGRES_USER
+        #  value: postgres
+        #- name: POSTGRES_PASS
+        #  valueFrom: 
+        #    secretKeyRef:
+        #      name: secret-for-python
+        #      key: postgres_password
+        
+        readinessProbe: 
+          {{- toYaml .Values.readinessProbe | nindent 12}}
+
+        livenessProbe: 
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+
+
+      # resourses:
+      #   requests:
+      #     memory: "64Mi"
+      #     cpu: "250m"

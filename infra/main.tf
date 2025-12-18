@@ -174,11 +174,27 @@ resource "google_compute_firewall" "allow-ingress-from-iap" {
 resource "google_project_iam_member" "access-iap" {
   project = var.project_id
   role = "roles/iap.tunnelResourceAccessor"
-  member = "serviceAccount:${google_service_account.sa.email}"
+  member = "serviceAccount:${google_service_account.iap-sa.email}"
 }
 
 
-resource "google_service_account" "sa" {
+resource "google_service_account" "iap-sa" {
   account_id   = "iap-account"
   display_name = "A service account for iap"
+}
+
+resource "google_service_account" "registry-sa" {
+  account_id   = "artifact-registry-account"
+  display_name = "A service account for artifact registry access"
+}
+
+resource "google_project_iam_member" "registry-iam" {
+  project = var.project_id
+  role = "roles/artifactregistry.createOnPushWriter"
+  member = "serviceAccount:${google_service_account.registry-sa.email}"
+}
+
+resource "google_service_account_key" "registry-access-key" {
+  service_account_id = google_service_account.registry-sa.name
+  public_key_type    = "TYPE_X509_PEM_FILE"
 }

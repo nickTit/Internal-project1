@@ -79,7 +79,7 @@
   community.postgresql.postgresql_pg_hba:
     dest: /etc/postgresql/16/main/pg_hba.conf
     contype: host
-    users: replication_user
+    users: '{{ item.user }}'
     source: '{{ item.source }}'
     databases: '{{item.database}}'
     method: md5
@@ -88,10 +88,13 @@
   loop: "{{lines}}"
   vars:
     lines:
-    - { source: "10.10.0.0/20", database: all }
-    - { source: "10.10.0.0/20", database: replication }
-    - { source: "10.4.0.0/16", database: all}
-    - { source: "10.4.0.0/16", database: replication }
+    - { source: "10.10.0.0/20", database: all, user: replication_user }
+    - { source: "10.10.0.0/20", database: replication, user: replication_user }
+    - { source: "10.4.0.0/16", database: all, user: replication_user}
+    - { source: "10.4.0.0/16", database: replication, user: replication_user }
+    - { source: "10.10.0.0/20", database: all, user: postgres }
+    - { source: "10.10.0.0/20", database: all, user: all }
+
   #notify:                #isnt working
   #  - Restart postgresql  
   
@@ -115,8 +118,17 @@
     password: "{{ db_password }}" #закинуть пароль в vault
     role_attr_flags: REPLICATION #
     state: present
-    
   become_user: postgres
+
+
+- name: settings.06-2 - update postgres  
+  community.postgresql.postgresql_user:
+    login_db: "postgres"
+    name: postgres
+    password: "{{postgres_password}}" #закинуть пароль в vault
+    state: present
+  become_user: postgres
+
 
 - name: "postgresql.07 - swich user db"
   community.postgresql.postgresql_db:

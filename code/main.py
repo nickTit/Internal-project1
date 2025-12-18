@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 PG_PASS = os.environ.get("PG_PASS")
 PG_URL = os.environ.get("PG_URL")
 DB_NAME = os.environ.get("DB_NAME")
-DATABASE_URL = f"postgresql+asyncpg://postgres:{PG_PASS}@{PG_URL}/{DB_NAME}" 
+POSTGRES_PASS = os.environ.get("POSTGRES_PASS")
+DATABASE_URL = f"postgresql+asyncpg://postgres:{POSTGRES_PASS}@{PG_URL}/{DB_NAME}" 
 # Замените на реальные данные для подключения!
 
 # Инициализация объекта базы данных

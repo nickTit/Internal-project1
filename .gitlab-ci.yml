@@ -1,6 +1,52 @@
 stages:
-  - test
+  - lint
+  #- test нет тестов)))))))
+  - build
+  - plan-infra
+  - apply-infra
+  - configure-db
+  - deploy-app
 
-test:
-  script: echo helloworld
-    
+
+
+#test:
+#  script: echo helloworld
+lint:
+  stage: lint
+  image: python:3.9-slim
+  script:
+    - python3 -m pip install flake8
+
+apply-infra:
+  stage: apply-infra
+  script:
+    - export TF_VAR_project_id=$project_id
+
+#юзать разные имеджи(ансибл терраформ) с разными стадиями
+
+#deploy-app:
+#  #image: 
+#  stage: peploy-app
+#
+#  script:
+#    - kubectl create secret docker-registry docker-secret \
+#      --docker-server=europe-central2-docker.pkg.dev \
+#      --docker-username=_json_key_base64 -n final-task-inno \
+#      --docker-password=${DOCKER_PODS_PASSWORD}
+#
+#    - kubectl create secret generic secret-for-python \
+#      --from-literal=pg_pass=${pg_pass} \
+#      --from-literal=pg_db=${pg_db} \
+#      --from-literal=pg_url=${pg_url} \
+#      --from-literal=postgres_password=${postgres_password}
+#
+#    - kubectl get secrets -n final-task-inno 
+#
+
+build: 
+  script:
+    - docker login  
+  
+  
+  
+  image: python:3.9-slim

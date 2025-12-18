@@ -1,0 +1,153 @@
+# Default values for test-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+
+image:
+  repository: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo
+  tag: "final_python:v02" #тут надо сделать пулл по хэшу
+  defaultImage: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:v02 
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+
+
+env:
+  - name: PG_PASS
+    valueFrom:
+      secretKeyRef:
+        name: secret-for-python
+        key: pg_pass
+  - name: DB_NAME
+    valueFrom:
+      secretKeyRef:
+        name: secret-for-python
+        key: pg_db
+  - name: PG_URL
+    valueFrom: 
+      secretKeyRef:
+        name: secret-for-python
+        key: pg_url
+  - name: POSTGRES_USER
+    value: postgres
+  - name: POSTGRES_PASS
+    valueFrom: 
+      secretKeyRef:
+        name: secret-for-python
+        key: postgres_password
+dockerSecret:
+  enabld: false
+  data: ""
+  # вот тут секьюрно сделать
+
+
+secret:
+  enabled: false
+  stringData:
+    pg_pass: "" #from ansible vault
+    pg_db: ""
+    pg_url: ""
+    postgres_password: "" #потом кинуть в ci-variables
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+readinessProbe: 
+  httpGet:
+    path: "/health" 
+    port: 8000
+  initialDelaySeconds: 5
+
+livenessProbe: 
+  httpGet:
+    path: "/health" 
+    port: 8000
+  initialDelaySeconds: 10
+  periodSeconds: 10 #change later
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+
+ingress:
+  enabled: true
+  annotations: 
+    kubernetes.io/ingress.class: gce
+    # kubernetes.io/tls-acme: "true"
+  
+              #not configured
+  # hosts:
+  #   - host: chart-example.local
+  #     paths:
+  #       - path: /
+  #         pathType: ImplementationSpecific
+  # tls: [] 
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+
+#-------------NOT CONFIGURED----------------------------
+
+
+serviceAccount: #not configured
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "" 
+
+podAnnotations: {} #not configured
+podLabels: {} #not configured
+
+podSecurityContext: {} #not configured
+  # fsGroup: 2000
+
+securityContext: {} #not configured
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+
+resources: {} #not configured
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+
+autoscaling: #not configured
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+
+volumes: [] #not configured
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+
+
+

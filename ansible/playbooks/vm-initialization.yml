@@ -9,5 +9,5 @@
   roles: 
     - { role: deploy_db_primary, when: inventory_hostname == "pg-primary" }
     - { role: deploy_db_standby, when: inventory_hostname == "pg-standby" }
-  vars_files:
-    - secrets.yml
+  #vars_files:
+  #  - secrets.yml
