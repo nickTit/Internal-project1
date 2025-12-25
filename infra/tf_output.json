@@ -1,0 +1,21 @@
+{
+  "key-for-artifact-registry": {
+    "sensitive": false,
+    "type": "string",
+    "value": "key is stored in file)))"
+  },
+  "privatIps": {
+    "sensitive": false,
+    "type": [
+      "tuple",
+      [
+        "string",
+        "string"
+      ]
+    ],
+    "value": [
+      "10.4.0.2",
+      "10.4.0.3"
+    ]
+  }
+}

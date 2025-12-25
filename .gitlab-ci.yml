@@ -1,9 +1,9 @@
 stages:
   - lint
   #- test нет тестов)))))))
-  - build
   - plan-infra
   - apply-infra
+  - build
   - configure-db
   - deploy-app
 
@@ -17,36 +17,93 @@ lint:
   script:
     - python3 -m pip install flake8
 
-apply-infra:
-  stage: apply-infra
+
+build: 
+  stage: build
+  image: python:3.9-slim
   script:
+    - docker build -t europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
+    - cat private-key.json | docker login --password-stdin -u _json_key_base64 https://europe-central2-docker.pkg.dev
+
+    - docker push europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
+
+terraform-plan:
+  stage: plan-infra
+  image: hashicorp/terraform:1.14
+  script:
+    - cat $final_task_private > ~/.ssh/final_task
+    - cat $final_task_pub > ~/.ssh/final_task.pub
+    - cd infra
     - export TF_VAR_project_id=$project_id
+    - terraform plan
+  artifacts:
+    paths:
+      - ~/.ssh/final_task
+      - ~/.ssh/final_task.pub
+
+apply-infra:
+  when: manual
+  stage: apply-infra
+  image: hashicorp/terraform:1.14
+  script:
+    #- ssh-keygen -N "" -t ed25519 -f ~/.ssh/final_task
+    - cat $final_task_private > ~/.ssh/final_task
+    - cat $final_task_pub > ~/.ssh/final_task.pub
+    - cd infra
+    - export TF_VAR_project_id=$project_id
+    - terraform apply --auto-approve
+    - terraform output -json > tf_output.json 
+    # file created -> передать в след стадию
+  artifacts:
+    #untracked: false
+    #when: on_success
+    #access: all
+    #expire_in: "30 days"
+    paths:
+      - infra/tf_output.json
+      - ~/.ssh/final_task
+      - ~/.ssh/final_task.pub
 
 #юзать разные имеджи(ансибл терраформ) с разными стадиями
 
-#deploy-app:
-#  #image: 
-#  stage: peploy-app
-#
-#  script:
-#    - kubectl create secret docker-registry docker-secret \
-#      --docker-server=europe-central2-docker.pkg.dev \
-#      --docker-username=_json_key_base64 -n final-task-inno \
-#      --docker-password=${DOCKER_PODS_PASSWORD}
-#
-#    - kubectl create secret generic secret-for-python \
-#      --from-literal=pg_pass=${pg_pass} \
-#      --from-literal=pg_db=${pg_db} \
-#      --from-literal=pg_url=${pg_url} \
-#      --from-literal=postgres_password=${postgres_password}
-#
-#    - kubectl get secrets -n final-task-inno 
-#
-
-build: 
+configure-db:
+  stage: configure-db
+  image: willhallonline/ansible:2.20.0-alpine-3.20
+  when: manual
   script:
-    - docker login  
+    #- mv infra/tf_output.json ansible/
+    - cd ansible/
+    - export IP1=$(jq '.privatIps.value[0]' ../infra/tf_output.json)
+    - "sed -i '6 s/\#*ansible_host.*/ansible_host: '$IP1'/' inventory.yml"
+    -  export IP2=$(jq '.privatIps.value[1]' ../infra/tf_output.json)
+    - "sed -i '11 s/\#*ansible_host.*/ansible_host: '$IP2'/' inventory.yml"
+    
+    - ansible-playbook -Kvv -i inventory.yml playbooks/vm-initialization.yml 
+    #ansible_become_pass=$SECRET PASS
+
+deploy-app:
+  #image: 
+  stage: peploy-app
+  when: manual
+  script:
+    -  gcloud container clusters get-credentials main-k8s-cluster --zone europe-central2-a --project valued-rigging-479120-t5
+    
+    - kubectl create secret docker-registry docker-secret \
+      --docker-server=europe-central2-docker.pkg.dev \
+      --docker-username=_json_key_base64 -n final-task-inno \
+      --docker-password=${DOCKER_PODS_PASSWORD}
+
+    - kubectl create secret generic secret-for-python \
+      --from-literal=pg_pass=${pg_pass} \
+      --from-literal=pg_db=${pg_db} \
+      --from-literal=pg_url=${pg_url} \
+      --from-literal=postgres_password=${postgres_password}
+
+    - kubectl get secrets -n final-task-inno
+
+
+    - helm upgrade --install --set image.tag="final_python:${CI_COMMIT_SHORT_SHA}"
+    #пропатчить черед sed
+
   
   
-  
-  image: python:3.9-slim

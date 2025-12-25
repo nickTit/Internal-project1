@@ -37,29 +37,7 @@ spec:
         env:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        #- name: PG_PASS
-        #  valueFrom:
-        #    secretKeyRef:
-        #      name: secret-for-python
-        #      key: pg_pass
-        #- name: DB_NAME
-        #  valueFrom:
-        #    secretKeyRef:
-        #      name: secret-for-python
-        #      key: pg_db
-        #- name: PG_URL
-        #  valueFrom: 
-        #    secretKeyRef:
-        #      name: secret-for-python
-        #      key: pg_url
-        #- name: POSTGRES_USER
-        #  value: postgres
-        #- name: POSTGRES_PASS
-        #  valueFrom: 
-        #    secretKeyRef:
-        #      name: secret-for-python
-        #      key: postgres_password
-        
+      
         readinessProbe: 
           {{- toYaml .Values.readinessProbe | nindent 12}}
 

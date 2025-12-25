@@ -2,7 +2,7 @@ all: #сделать так чтобы CI брал ip из tf-output и вста
   children:
     databases-prod-test:
       hosts:
-        pg-primary:
+        pg-primary: #DO NOT CHANGE LINE NUMBERS
           #ansible_host: "10.4.0.3"
           primary_user: replication_user
           db_name: clouder_db
@@ -12,12 +12,13 @@ all: #сделать так чтобы CI брал ip из tf-output и вста
           primary_user: ansible-user
           db_name: clouder_db
           INSTANCE: "02"
-          host: "10.4.0.2"
-vars:
-  ansible_user: ansible-user
-  db_password: "$pg_pass"
-  postgres_password: "$postgres_password"
-  
+          #host: "10.4.0.2"
+  vars:
+    ansible_user: ansible-user
+    db_password: "$pg_pass"
+    postgres_password: "$postgres_password"
+    #export pg_pass=random-supersecret postgres_password=secret
+
 
 #-------need-------
 # set ips
