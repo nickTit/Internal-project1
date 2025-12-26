@@ -14,3 +14,8 @@ resource "local_file" "private-key-for-registry" {
   content = google_service_account_key.registry-access-key.private_key
   filename = "./private-key.json" 
 }
+
+resource "local_file" "private-key-for-gke" {
+  content = base64decode(google_service_account_key.gke-access-key.private_key)
+  filename = "./gke-private-key.json" 
+}

@@ -1,5 +1,5 @@
 stages:
-  - lint
+  #- lint
   #- test нет тестов)))))))
   - plan-infra
   - apply-infra
@@ -11,46 +11,68 @@ stages:
 
 #test:
 #  script: echo helloworld
-lint:
-  stage: lint
-  image: python:3.9-slim
-  script:
-    - python3 -m pip install flake8
+
+#lint:
+#  stage: lint
+#  image: python:3.9-slim
+#  script:
+#    - python3 -m pip install flake8
 
 
-build: 
-  stage: build
-  image: python:3.9-slim
-  script:
-    - docker build -t europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
-    - cat private-key.json | docker login --password-stdin -u _json_key_base64 https://europe-central2-docker.pkg.dev
-
-    - docker push europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
 
 terraform-plan:
   stage: plan-infra
   image: hashicorp/terraform:1.14
+
+  before_script:
+    - cp $SA /tmp/credentials.json
+    - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
+
   script:
-    - cat $final_task_private > ~/.ssh/final_task
-    - cat $final_task_pub > ~/.ssh/final_task.pub
+    - who
+    - pwd
+    - mkdir ~/.ssh/
+    - echo "$final_task_private" > ~/.ssh/final_task
+    - echo "$final_task_pub" > ~/.ssh/final_task.pub
+
+    
+
+    - ls -la ~/.ssh/
+    - ls -la
     - cd infra
+    - echo $project_id
     - export TF_VAR_project_id=$project_id
+    - terraform init
     - terraform plan
-  artifacts:
-    paths:
-      - ~/.ssh/final_task
-      - ~/.ssh/final_task.pub
+  #artifacts:
+  #  paths:
+  #    - ~/.ssh/final_task
+  #    - ~/.ssh/final_task.pub
 
 apply-infra:
-  when: manual
+  #when: manual
   stage: apply-infra
   image: hashicorp/terraform:1.14
+  before_script:
+    - cp $SA /tmp/credentials.json
+    - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
+
   script:
-    #- ssh-keygen -N "" -t ed25519 -f ~/.ssh/final_task
-    - cat $final_task_private > ~/.ssh/final_task
-    - cat $final_task_pub > ~/.ssh/final_task.pub
+    - mkdir ~/.ssh
+    - echo $final_task_private > ~/.ssh/final_task
+    - echo $final_task_pub > ~/.ssh/final_task.pub
+    
+    - chmod 600 ~/.ssh/final_task
+    
+    - mkdir keys
+    - cp -r ~/.ssh/* ./keys
+    
+    - ls -la
+    - ls -la keys
     - cd infra
+
     - export TF_VAR_project_id=$project_id
+    - terraform init
     - terraform apply --auto-approve
     - terraform output -json > tf_output.json 
     # file created -> передать в след стадию
@@ -61,48 +83,120 @@ apply-infra:
     #expire_in: "30 days"
     paths:
       - infra/tf_output.json
-      - ~/.ssh/final_task
-      - ~/.ssh/final_task.pub
+      - ./keys
+      - infra/private-key.json
+      - infra/gke-private-key.json
+      
 
 #юзать разные имеджи(ансибл терраформ) с разными стадиями
+
+build: 
+  stage: build
+  image: docker:27.0
+  variables:
+        DOCKER_HOST: tcp://thedockerhost:2375
+        DOCKER_TLS_CERTDIR: ""
+  services: 
+      - name: docker:27.0-dind
+        alias: thedockerhost
+        command: ["--tls=false"]
+  before_script:
+  #  - mkdir keys
+    - mkdir ~/.ssh
+  
+  script:
+    #- cp -r ~/.ssh/* ./keys
+
+    - docker build -f Dockerfile_python -t europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA} ./
+    - cat infra/private-key.json | docker login --password-stdin -u _json_key_base64 https://europe-central2-docker.pkg.dev
+    - docker push europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
+  
+  artifacts:
+    paths:
+      #- infra/tf_output.json
+      - ./keys
+      #- infra/private-key.json
+      - infra/gke-private-key.json
+
+
 
 configure-db:
   stage: configure-db
   image: willhallonline/ansible:2.20.0-alpine-3.20
-  when: manual
+  #when: manual
   script:
     #- mv infra/tf_output.json ansible/
+    - apk update
+    - apk add jq
+    - mkdir ~/.ssh
+    - cp -r ./keys/* ~/.ssh
+    
+    - eval "$(ssh-agent -s)"
+    #- cat ~/.ssh/final_task
+    - echo "$final_task_private" | tr -d '\r' | ssh-add -
+
+
     - cd ansible/
     - export IP1=$(jq '.privatIps.value[0]' ../infra/tf_output.json)
-    - "sed -i '6 s/\#*ansible_host.*/ansible_host: '$IP1'/' inventory.yml"
+    - "sed -i '6 s/#*ansible_host.*/ansible_host: '$IP1'/' inventory.yml"
     -  export IP2=$(jq '.privatIps.value[1]' ../infra/tf_output.json)
-    - "sed -i '11 s/\#*ansible_host.*/ansible_host: '$IP2'/' inventory.yml"
+    - "sed -i '11 s/#*ansible_host.*/ansible_host: '$IP2'/' inventory.yml"
     
+    - export ANSIBLE_CONFIG="./ansible.cfg"
+
     - ansible-playbook -Kvv -i inventory.yml playbooks/vm-initialization.yml 
     #ansible_become_pass=$SECRET PASS
+  artifacts:
+      paths:
+        - infra/gke-private-key.json
 
 deploy-app:
-  #image: 
-  stage: peploy-app
-  when: manual
+  image: google/cloud-sdk:543.0.0-alpine
+  stage: deploy-app
+  #when: manual
+  before_script:
+    #- cat infra/gke-private-key.json | docker login -u _json_key --password-stdin https://eu.gcr.io
+    #- docker-credential-gcloud --project $project_id --access-token-file infra/gke-private-key.json 
+    - apk add helm
   script:
-    -  gcloud container clusters get-credentials main-k8s-cluster --zone europe-central2-a --project valued-rigging-479120-t5
+    #- gcloud auth activate-service-account artifact-registry-account@valued-rigging-479120-t5.iam.gserviceaccount.com --key-file=infra/private-key.json
+    #- gcloud auth configure-docker europe-central2-docker.pkg.dev
     
-    - kubectl create secret docker-registry docker-secret \
-      --docker-server=europe-central2-docker.pkg.dev \
-      --docker-username=_json_key_base64 -n final-task-inno \
-      --docker-password=${DOCKER_PODS_PASSWORD}
 
-    - kubectl create secret generic secret-for-python \
+
+    - cat infra/gke-private-key.json    
+    - gcloud auth activate-service-account  --key-file=infra/gke-private-key.json
+    # попробовать логиниться и не логиниться, вроде создаются под капотом node pool аккаунты и образ сам стягивается из регистри
+
+    - gcloud config set project $project_id
+    - gcloud config set container/cluster main-k8s-cluster
+    - gcloud config set compute/zone eu-central1-b
+    - gcloud container clusters get-credentials  main-k8s-cluster --zone europe-central2-a --project $project_id
+    - gcloud components install kubectl
+
+    - kubectl create namespace final-task-inno --dry-run=client -o json | kubectl apply -f -
+
+    - | 
+      kubectl create secret -n final-task-inno docker-registry docker-secret \
+      --docker-server=europe-central2-docker.pkg.dev \
+      --docker-username=_json_key_base64  \
+      --docker-password=${DOCKER_PODS_PASSWORD} \
+      --dry-run=client -o json | kubectl apply -f -
+
+
+    - |
+      kubectl create secret -n final-task-inno generic secret-for-python \
       --from-literal=pg_pass=${pg_pass} \
       --from-literal=pg_db=${pg_db} \
       --from-literal=pg_url=${pg_url} \
-      --from-literal=postgres_password=${postgres_password}
+      --from-literal=postgres_password=${postgres_password} \
+      --dry-run=client -o json | kubectl apply -f -
 
     - kubectl get secrets -n final-task-inno
-
-
-    - helm upgrade --install --set image.tag="final_python:${CI_COMMIT_SHORT_SHA}"
+    
+    
+    - helm upgrade --install --atomic python-app-chart ./k8s/main-chart --set image.tag="final_python:${CI_COMMIT_SHORT_SHA}"
+    
     #пропатчить черед sed
 
   

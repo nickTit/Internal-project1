@@ -15,8 +15,9 @@ all: #сделать так чтобы CI брал ip из tf-output и вста
           #host: "10.4.0.2"
   vars:
     ansible_user: ansible-user
-    db_password: "$pg_pass"
-    postgres_password: "$postgres_password"
+    db_password: "{{ lookup ('env', 'pg_pass') }}"
+    postgres_password: "{{ lookup ('env', 'postgres_password') }}"
+    commit_hash: "{{ lookup('env', 'CI_COMMIT_SHORT_SHA') }}"
     #export pg_pass=random-supersecret postgres_password=secret
 
 

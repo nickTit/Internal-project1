@@ -7,7 +7,7 @@ replicaCount: 3
 image:
   repository: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo
   tag: "final_python:v02" #тут надо сделать пулл по хэшу
-  defaultImage: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:v02 
+  defaultImage: europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:b40ad37f71d8e 
 
 imagePullSecrets: []
 nameOverride: ""

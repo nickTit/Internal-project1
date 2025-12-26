@@ -1,6 +1,11 @@
 ##SPDX-License-Identifier: MIT-0
 #---
 ## tasks file for deploy_db
+- name: Debug variables
+  ansible.builtin.debug:
+    msg: 
+      - "Password is: {{ db_password }}"
+      - "Hash is: {{ commit_hash }}"
 - name: settings.01 - Add primary user
   user:
      name: "{{ primary_user }}"

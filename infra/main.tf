@@ -1,3 +1,8 @@
+resource "google_project_service" "gcp_resource_manager_api" {
+  project = var.project_id
+  service = "cloudresourcemanager.googleapis.com"
+}
+
 resource "google_compute_network" "main_vpc_network" {
   name                    = "project-vpc-network"
   auto_create_subnetworks = false
@@ -183,6 +188,8 @@ resource "google_service_account" "iap-sa" {
   display_name = "A service account for iap"
 }
 
+
+
 resource "google_service_account" "registry-sa" {
   account_id   = "artifact-registry-account"
   display_name = "A service account for artifact registry access"
@@ -196,5 +203,26 @@ resource "google_project_iam_member" "registry-iam" {
 
 resource "google_service_account_key" "registry-access-key" {
   service_account_id = google_service_account.registry-sa.name
+  public_key_type    = "TYPE_X509_PEM_FILE"
+}
+
+
+
+
+resource "google_service_account" "gke-sa" {
+  description = "account for gitlab ci access to GKE cluster"
+  account_id   = "gke-access-account"
+  display_name = "Service account for access from gitlab CI to GKE cluster"
+}
+
+resource "google_project_iam_member" "gke-iam" {
+  count = length(var.roles-for-gke)
+  project = var.project_id
+  role = var.roles-for-gke[count.index]
+  member = "serviceAccount:${google_service_account.gke-sa.email}"
+}
+
+resource "google_service_account_key" "gke-access-key" {
+  service_account_id = google_service_account.gke-sa.name
   public_key_type    = "TYPE_X509_PEM_FILE"
 }

@@ -45,3 +45,9 @@ variable "private_subnetwokr_names" {
 variable "instances" {
   default = ["pg-primary", "pg-standby"]
 }
+
+variable "roles-for-gke" {
+  type = list(string)
+  description = "two roles for access from gitlab ci to GKE cluster"
+  default = ["roles/container.developer", "roles/storage.objectAdmin" ]
+}

@@ -1,6 +1,11 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for deploy_db_standby
+- name: Debug variables
+  ansible.builtin.debug:
+    msg: 
+      - "Password is: {{ db_password }}"
+      - "Hash is: {{ commit_hash }}"
 
 - name: "postgresql.01 - install db"
   ansible.builtin.apt:
@@ -32,7 +37,7 @@
     name: postgresql
 
 - name: postgre.04 - making pg_basebackup 
-  ansible.builtin.command: "pg_basebackup -h pg-primary -D /var/lib/postgresql/16/main/data1 -w -U replication_user -v -P --wal-method=stream -R " #R добавил сам
+  ansible.builtin.command: "pg_basebackup -h pg-primary -D /var/lib/postgresql/16/main/data{{commit_hash}} -w -U replication_user -v -P --wal-method=stream -R " #R добавил сам
   become_user: postgres
 
 - name: "postgresql.05 - update - hot_standby "

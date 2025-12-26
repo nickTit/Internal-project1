@@ -2,11 +2,11 @@
 infra/*.tfvars
 **/.terraform/
 **/.terraform*
-infra/private-key.json
+infra/*key*.json
 #ansible
 ansible/**/secrets*.yml
 #k8s
-k8s/**/*.tpl
+#k8s/**/*.tpl
 k8s/runner
 k8s/backup_templates*
 k8s/valued-rigging-479120-t5-3d5a5c7bf26f.json
