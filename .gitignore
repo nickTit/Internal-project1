@@ -1,8 +1,10 @@
 #tf
-infra/*.tfvars
+infra/**/*.tfvars
 **/.terraform/
 **/.terraform*
-infra/*key*.json
+infra/**/*key*.json
+infra/**/*.json
+infra/**/\.*
 #ansible
 ansible/**/secrets*.yml
 #k8s

@@ -1,6 +1,6 @@
 stages:
-  #- lint
   #- test нет тестов)))))))
+  - lint
   - plan-infra
   - apply-infra
   - build
@@ -22,7 +22,8 @@ stages:
 
 terraform-plan:
   stage: plan-infra
-  image: hashicorp/terraform:1.14
+  image: alpine/terragrunt:tf1.14.1
+  #image: hashicorp/terraform:1.14
 
   before_script:
     - cp $SA /tmp/credentials.json
@@ -42,8 +43,8 @@ terraform-plan:
     - cd infra
     - echo $project_id
     - export TF_VAR_project_id=$project_id
-    - terraform init
-    - terraform plan
+    - terragrunt init
+    - terragrunt plan
   #artifacts:
   #  paths:
   #    - ~/.ssh/final_task
@@ -52,7 +53,8 @@ terraform-plan:
 apply-infra:
   #when: manual
   stage: apply-infra
-  image: hashicorp/terraform:1.14
+  image: alpine/terragrunt:tf1.14.1
+  #image: hashicorp/terraform:1.14
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
@@ -72,10 +74,17 @@ apply-infra:
     - cd infra
 
     - export TF_VAR_project_id=$project_id
-    - terraform init
-    - terraform apply --auto-approve
-    - terraform output -json > tf_output.json 
-    # file created -> передать в след стадию
+    - terragrunt init
+    - terragrunt apply --auto-approve
+    - terragrunt output -json > tf_output.json
+    - terragrunt output -raw private-key-for-gke > ./gke-private-key.json
+    - terragrunt output -raw private-key-for-registry > ./private-key.json
+    - ls -la 
+    - ls -la lazy_module/
+    - pwd
+    - echo $HOME
+    - ls -la ~
+    # file created -> to the next stage
   artifacts:
     #untracked: false
     #when: on_success
@@ -116,7 +125,7 @@ build:
       #- infra/tf_output.json
       - ./keys
       #- infra/private-key.json
-      - infra/gke-private-key.json
+      - infra/lazy_module/gke-private-key.json
 
 
 

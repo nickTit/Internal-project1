@@ -71,6 +71,8 @@ resource "google_artifact_registry_repository" "my-repo" {
 
 }
 
+
+
 resource "google_compute_instance" "vm_for_databases" {
   count = length(var.instances)
 
