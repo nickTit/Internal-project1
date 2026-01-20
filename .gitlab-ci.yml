@@ -167,6 +167,7 @@ configure-db:
   needs: ["apply-infra"]
   rules:
     - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    - if: $CI_COMMIT_BRANCH == "master"
   script:
     #- mv infra/tf_output.json ansible/
     - apk update
