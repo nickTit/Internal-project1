@@ -77,7 +77,7 @@ terraform-plan:
   #    - ~/.ssh/final_task.pub
 
 apply-infra:
-  #when: manual
+  when: manual
   stage: apply-infra
   image: alpine/terragrunt:tf1.14.1
   needs: ["terraform-plan"] 
@@ -164,10 +164,11 @@ configure-db:
   
   stage: configure-db
   image: willhallonline/ansible:2.20.0-alpine-3.20
-  #when: manual
-  needs: ["apply-infra"]
+  when: manual
+  needs: [" "]
   rules:
-    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master"
   script:
     #- mv infra/tf_output.json ansible/
     - apk update
@@ -197,10 +198,12 @@ configure-db:
 deploy-app:
   image: google/cloud-sdk:543.0.0-alpine
   stage: deploy-app
-  #when: manual
+  when: manual
   needs: ["configure-db"]
   rules:
-    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+   - if: $CI_COMMIT_BRANCH == "master"
+   # - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   
   before_script: 
     #- cat infra/gke-private-key.json | docker login -u _json_key --password-stdin https://eu.gcr.io
