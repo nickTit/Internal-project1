@@ -79,8 +79,7 @@ apply-infra:
   #when: manual
   stage: apply-infra
   image: alpine/terragrunt:tf1.14.1
-  needs:
-    - terraform-plan
+  needs: ["terraform-plan"]
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
   #image: hashicorp/terraform:1.14
@@ -165,8 +164,7 @@ configure-db:
   stage: configure-db
   image: willhallonline/ansible:2.20.0-alpine-3.20
   #when: manual
-  needs:
-    - apply-infra
+  needs: ["apply-infra"]
   rules:
     - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   script:
@@ -199,8 +197,7 @@ deploy-app:
   image: google/cloud-sdk:543.0.0-alpine
   stage: deploy-app
   #when: manual
-  needs:
-    - configure-db
+  needs: ["configure-db"]
   rules:
     - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   
