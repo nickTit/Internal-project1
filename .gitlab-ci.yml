@@ -49,7 +49,8 @@ terraform-plan:
   stage: plan-infra
   image: alpine/terragrunt:tf1.14.1
   rules:
-    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master"
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
@@ -166,9 +167,7 @@ configure-db:
   #when: manual
   needs: ["apply-infra"]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    #- if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
-    - if: $CI_COMMIT_BRANCH == "master"
+    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   script:
     #- mv infra/tf_output.json ansible/
     - apk update
