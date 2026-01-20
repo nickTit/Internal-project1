@@ -202,7 +202,7 @@ deploy-app:
   rules:
     - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   
-  before_script:
+  before_script: 
     #- cat infra/gke-private-key.json | docker login -u _json_key --password-stdin https://eu.gcr.io
     #- docker-credential-gcloud --project $project_id --access-token-file infra/gke-private-key.json 
     - apk add helm
