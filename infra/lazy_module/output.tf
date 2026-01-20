@@ -21,10 +21,10 @@ output "private-key-for-gke" {
 }
 
 
-resource "local_file" "private-key-for-registry1" {
-  content = google_service_account_key.registry-access-key.private_key
-  filename = "./private-keyy1.json" 
-}
+#resource "local_file" "private-key-for-registry1" {
+#  content = google_service_account_key.registry-access-key.private_key
+#  filename = "./private-keyy1.json" 
+#}
 
 #resource "local_file" "private-key-for-gke" {
 #  content = base64decode(google_service_account_key.gke-access-key.private_key)

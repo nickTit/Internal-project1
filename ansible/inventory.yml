@@ -1,26 +1,26 @@
-all: #сделать так чтобы CI брал ip из tf-output и вставлял сюда
+all:  #сделать так чтобы CI брал ip из tf-output и вставлял сюда 
   children:
     databases-prod-test:
       hosts:
-        pg-primary: #DO NOT CHANGE LINE NUMBERS
-          #ansible_host: "10.4.0.3"
+        pg-primary:  #DO NOT CHANGE LINE NUMBERS 
+          #ansible_host: "10.4.0.3" 
           primary_user: replication_user
           db_name: clouder_db
           INSTANCE: "01"
         pg-standby:
-          #ansible_host: "10.4.0.2"
+          #ansible_host: "10.4.0.2"  
           primary_user: ansible-user
           db_name: clouder_db
           INSTANCE: "02"
-          #host: "10.4.0.2"
+          #host: "10.4.0.2" 
   vars:
     ansible_user: ansible-user
     db_password: "{{ lookup ('env', 'pg_pass') }}"
     postgres_password: "{{ lookup ('env', 'postgres_password') }}"
     commit_hash: "{{ lookup('env', 'CI_COMMIT_SHORT_SHA') }}"
-    #export pg_pass=random-supersecret postgres_password=secret
+    #export pg_pass=random-supersecret postgres_password=secret 
 
 
-#-------need-------
+#-------need------- 
 # set ips
 #нету внешних ip адресов

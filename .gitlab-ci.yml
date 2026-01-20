@@ -12,19 +12,44 @@ stages:
 #test:
 #  script: echo helloworld
 
-#lint:
-#  stage: lint
-#  image: python:3.9-slim
-#  script:
-#    - python3 -m pip install flake8
+lint-py:
+  stage: lint
+  image: alpine/flake8:7.3.0
+  script:
+    - cd code/ 
+    - flake8 main.py
 
+lint-tf: 
+  stage: lint
+  image: ghcr.io/terraform-linters/tflint
+  script: 
+    - pwd
+    - cd infra/lazy_module
+    - | 
+      cat << EOF > .tflint.hcl
+      plugin "google" {
+      enabled = true
+      version = "0.38.0"
+      source  = "github.com/terraform-linters/tflint-ruleset-google"
+      }
+      EOF
+    - tflint --init
+    - tflint    
+
+lint-ansible:
+  stage: lint
+  image: pipelinecomponents/ansible-lint:amd64-74567e9
+  script: 
+    - cd ansible
+    - chmod 700 .
+    - ansible-lint -x yaml[comments] *.yml #or changing comment's spaces by hand
 
 
 terraform-plan:
   stage: plan-infra
   image: alpine/terragrunt:tf1.14.1
-  #image: hashicorp/terraform:1.14
-
+  rules:
+    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
@@ -54,6 +79,10 @@ apply-infra:
   #when: manual
   stage: apply-infra
   image: alpine/terragrunt:tf1.14.1
+  needs:
+    - terraform-plan
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   #image: hashicorp/terraform:1.14
   before_script:
     - cp $SA /tmp/credentials.json
@@ -109,6 +138,8 @@ build:
       - name: docker:27.0-dind
         alias: thedockerhost
         command: ["--tls=false"]
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "feature"
   before_script:
   #  - mkdir keys
     - mkdir ~/.ssh
@@ -130,9 +161,14 @@ build:
 
 
 configure-db:
+  
   stage: configure-db
   image: willhallonline/ansible:2.20.0-alpine-3.20
   #when: manual
+  needs:
+    - apply-infra
+  rules:
+    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
   script:
     #- mv infra/tf_output.json ansible/
     - apk update
@@ -163,6 +199,11 @@ deploy-app:
   image: google/cloud-sdk:543.0.0-alpine
   stage: deploy-app
   #when: manual
+  needs:
+    - configure-db
+  rules:
+    - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+  
   before_script:
     #- cat infra/gke-private-key.json | docker login -u _json_key --password-stdin https://eu.gcr.io
     #- docker-credential-gcloud --project $project_id --access-token-file infra/gke-private-key.json 

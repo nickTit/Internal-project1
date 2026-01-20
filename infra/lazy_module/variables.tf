@@ -1,4 +1,5 @@
 variable "region" {
+  type = string
   default = "europe-central2"
 }
 variable "project_id" {
@@ -6,6 +7,7 @@ variable "project_id" {
 }
 
 variable "access_requiring_subnets" {
+  type = list(string)
   default = ["subnet-gke-nodes", "subnet-vms-db"] #бавь сюда потом все сабнеты
 }
 
@@ -43,6 +45,7 @@ variable "private_subnetwokr_names" {
 
 
 variable "instances" {
+  type = list(string)
   default = ["pg-primary", "pg-standby"]
 }
 
