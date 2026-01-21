@@ -51,6 +51,8 @@ terraform-plan:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
     - if: $CI_COMMIT_BRANCH == "feature"
+    - if: $CI_COMMIT_BRANCH == "main"
+  
   #  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   before_script:
     - cp $SA /tmp/credentials.json
