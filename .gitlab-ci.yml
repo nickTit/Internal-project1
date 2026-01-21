@@ -49,8 +49,9 @@ terraform-plan:
   stage: plan-infra
   image: alpine/terragrunt:tf1.14.1
   rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+    - if: $CI_COMMIT_BRANCH == "feature"
   #  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-  #  - if: $CI_COMMIT_BRANCH == "master"
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
