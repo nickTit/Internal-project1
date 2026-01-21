@@ -2,8 +2,8 @@ stages:
   #- test нет тестов)))))))
   - lint
   - plan-infra
-  - apply-infra
   - build
+  - apply-infra
   - configure-db
   - deploy-app
 
@@ -49,8 +49,8 @@ terraform-plan:
   stage: plan-infra
   image: alpine/terragrunt:tf1.14.1
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-    - if: $CI_COMMIT_BRANCH == "master"
+  #  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  #  - if: $CI_COMMIT_BRANCH == "master"
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
@@ -61,7 +61,6 @@ terraform-plan:
     - mkdir ~/.ssh/
     - echo "$final_task_private" > ~/.ssh/final_task
     - echo "$final_task_pub" > ~/.ssh/final_task.pub
-
     
 
     - ls -la ~/.ssh/
@@ -71,13 +70,37 @@ terraform-plan:
     - export TF_VAR_project_id=$project_id
     - terragrunt init
     - terragrunt plan
-  #artifacts:
-  #  paths:
-  #    - ~/.ssh/final_task
-  #    - ~/.ssh/final_task.pub
+    
+    - terragrunt output -raw private-key-for-registry > ./private-key.json
+  artifacts:
+    paths:
+    #  - infra/tf_output.json
+      - infra/private-key.json
+    #  - infra/gke-private-key.json
+  
+#terraform-output:
+#  stage: plan-infra
+#  image: alpine/terragrunt:tf1.14.1
+#  rules:
+#  # - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#  # - if: $CI_COMMIT_BRANCH == "master"
+#  before_script:
+#    - cp $SA /tmp/credentials.json
+#    - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
+#
+#  script:
+#    - cd infra
+#    - export TF_VAR_project_id=$project_id
+#    - terragrunt output -raw private-key-for-registry > ./private-key.json
+# 
+#  artifacts:
+#    paths:
+#      - infra/private-key.json
+  
+
 
 apply-infra:
-  when: manual
+  #when: manual
   stage: apply-infra
   image: alpine/terragrunt:tf1.14.1
   needs: ["terraform-plan"] 
@@ -107,7 +130,7 @@ apply-infra:
     - terragrunt apply --auto-approve
     - terragrunt output -json > tf_output.json
     - terragrunt output -raw private-key-for-gke > ./gke-private-key.json
-    - terragrunt output -raw private-key-for-registry > ./private-key.json
+    #- terragrunt output -raw private-key-for-registry > ./private-key.json
     - ls -la 
     - ls -la lazy_module/
     - pwd
@@ -122,11 +145,10 @@ apply-infra:
     paths:
       - infra/tf_output.json
       - ./keys
-      - infra/private-key.json
+    #  - infra/private-key.json
       - infra/gke-private-key.json
       
 
-#юзать разные имеджи(ансибл терраформ) с разными стадиями
 
 build: 
   stage: build
@@ -156,7 +178,7 @@ build:
       #- infra/tf_output.json
       - ./keys
       #- infra/private-key.json
-      - infra/lazy_module/gke-private-key.json
+      #- infra/gke-private-key.json
 
 
 
@@ -164,10 +186,10 @@ configure-db:
   
   stage: configure-db
   image: willhallonline/ansible:2.20.0-alpine-3.20
-  when: manual
+  #when: manual
   needs: ["apply-infra"]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    #- if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "master"
   script:
     #- mv infra/tf_output.json ansible/
@@ -198,10 +220,10 @@ configure-db:
 deploy-app:
   image: google/cloud-sdk:543.0.0-alpine
   stage: deploy-app
-  when: manual
+  #when: manual
   needs: ["configure-db"]
   rules:
-   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+   #- if: $CI_PIPELINE_SOURCE == "merge_request_event"
    - if: $CI_COMMIT_BRANCH == "master"
    # - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   
