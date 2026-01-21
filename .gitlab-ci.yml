@@ -153,7 +153,6 @@ configure-db:
   when: manual
   needs: ["apply-infra"]
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "master"
   script:
     #- mv infra/tf_output.json ansible/
@@ -188,7 +187,6 @@ deploy-app:
   when: manual
   needs: ["configure-db"]
   rules:
-   - if: $CI_PIPELINE_SOURCE == "merge_request_event"
    - if: $CI_COMMIT_BRANCH == "master"
    # - if:  $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
   
