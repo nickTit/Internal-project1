@@ -21,9 +21,9 @@ output "private-key-for-gke" {
 }
 
 
-#resource "local_file" "private-key-for-registry1" {
+#resource "local_file" "private-key-for-registry" {
 #  content = google_service_account_key.registry-access-key.private_key
-#  filename = "./private-keyy1.json" 
+#  filename = "./private-key.json" 
 #}
 
 #resource "local_file" "private-key-for-gke" {
