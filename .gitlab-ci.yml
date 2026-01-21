@@ -74,30 +74,8 @@ terraform-plan:
     - terragrunt output -raw private-key-for-registry > ./private-key.json
   artifacts:
     paths:
-    #  - infra/tf_output.json
       - infra/private-key.json
-    #  - infra/gke-private-key.json
   
-#terraform-output:
-#  stage: plan-infra
-#  image: alpine/terragrunt:tf1.14.1
-#  rules:
-#  # - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-#  # - if: $CI_COMMIT_BRANCH == "master"
-#  before_script:
-#    - cp $SA /tmp/credentials.json
-#    - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
-#
-#  script:
-#    - cd infra
-#    - export TF_VAR_project_id=$project_id
-#    - terragrunt output -raw private-key-for-registry > ./private-key.json
-# 
-#  artifacts:
-#    paths:
-#      - infra/private-key.json
-  
-
 
 apply-infra:
   #when: manual
@@ -106,7 +84,6 @@ apply-infra:
   needs: ["terraform-plan"] 
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
-  #image: hashicorp/terraform:1.14
   before_script:
     - cp $SA /tmp/credentials.json
     - export GOOGLE_APPLICATION_CREDENTIALS="/tmp/credentials.json"
@@ -145,7 +122,7 @@ apply-infra:
     paths:
       - infra/tf_output.json
       - ./keys
-    #  - infra/private-key.json
+      - infra/private-key.json
       - infra/gke-private-key.json
       
 
@@ -162,24 +139,10 @@ build:
         command: ["--tls=false"]
   rules:
     - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "feature"
-  before_script:
-  #  - mkdir keys
-    - mkdir ~/.ssh
-  
   script:
-    #- cp -r ~/.ssh/* ./keys
-
     - docker build -f Dockerfile_python -t europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA} ./
     - cat infra/private-key.json | docker login --password-stdin -u _json_key_base64 https://europe-central2-docker.pkg.dev
     - docker push europe-central2-docker.pkg.dev/valued-rigging-479120-t5/project-repo/final_python:${CI_COMMIT_SHORT_SHA}
-  
-  artifacts:
-    paths:
-      #- infra/tf_output.json
-      - ./keys
-      #- infra/private-key.json
-      #- infra/gke-private-key.json
-
 
 
 configure-db:
@@ -214,9 +177,10 @@ configure-db:
     - ansible-playbook -Kvv -i inventory.yml playbooks/vm-initialization.yml 
     #ansible_become_pass=$SECRET PASS
   artifacts:
-      paths:
-        - infra/gke-private-key.json
-
+    paths:
+      - infra/gke-private-key.json
+      - infra/private-key.json
+      
 deploy-app:
   image: google/cloud-sdk:543.0.0-alpine
   stage: deploy-app
@@ -235,8 +199,6 @@ deploy-app:
     #- gcloud auth activate-service-account artifact-registry-account@valued-rigging-479120-t5.iam.gserviceaccount.com --key-file=infra/private-key.json
     #- gcloud auth configure-docker europe-central2-docker.pkg.dev
     
-
-
     - cat infra/gke-private-key.json    
     - gcloud auth activate-service-account  --key-file=infra/gke-private-key.json
     # попробовать логиниться и не логиниться, вроде создаются под капотом node pool аккаунты и образ сам стягивается из регистри
@@ -253,7 +215,7 @@ deploy-app:
       kubectl create secret -n final-task-inno docker-registry docker-secret \
       --docker-server=europe-central2-docker.pkg.dev \
       --docker-username=_json_key_base64  \
-      --docker-password=${DOCKER_PODS_PASSWORD} \
+      --docker-password="$(cat infra/private-key.json)" \
       --dry-run=client -o json | kubectl apply -f -
 
 
